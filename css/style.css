@@ -1,0 +1,272 @@
+/**
+*   $Id: style.css 21 2011-04-04 17:19:19Z root $
+*   Styles for the Blog plugin
+*   NOTE: paths specified below are relative to the site root 
+*   (http://www.mysite.com/)
+*/
+
+#rednote {
+  font-color: red;
+}
+
+.blogform label
+{
+color: #781351;
+width: 8em;
+float: left;
+text-align: right;
+margin-right: 0.5em;
+display: block
+}
+
+.blogform p {
+  line-height: 1px;
+  margin-top:0px;
+}
+
+.blogform form div {
+  clear: left;
+  display: block;
+/*  width: 354px; */
+  height: expression('1%');
+  margin: 5px 0 0 0;
+  padding: 1px 3px;
+}
+/*
+.blogform submit input button
+{
+  margin-left: 4.5em;
+}
+
+form.blogform input
+{
+  color: #781351;
+  background: #fee3ad;
+  border: 1px solid #781351
+}
+
+form.blogform submit input
+{
+  color: #000;
+  background: #ffa20f;
+  border: 2px outset #d7b9c9
+}
+
+div.blogform input.file {
+    position: relative;
+    text-align: right;
+    //-moz-opacity:0 ;
+    //filter:alpha(opacity: 0);
+    //opacity: 0;
+    z-index: 2;
+  color: #781351;
+  background: #fee3ad;
+}
+
+form.blogform select {
+  color: #781351;
+  background: #fee3ad;
+}
+*/
+
+.blogform fieldset
+{
+  border: 1px solid #781351;
+  /*width: 20em*/
+  margin-bottom: 5px;
+}
+
+.blogform legend
+{
+color: #781351;
+background: #fee3ad;
+/*color: #000;
+background: #8D1A1D;*/
+border: 1px solid #781351;
+padding: 2px 6px
+} 
+
+.blogform formbutton {
+cursor:pointer;
+border:outset 1px #ccc;
+background:#999;
+color:#666;
+font-weight:bold;
+margin-left:3em;
+padding: 1px 2px;
+/*background:url(article/images/formbg.gif) repeat-x left top;*/
+}
+
+div.articlelistitem {
+    padding-bottom:15px;
+    border-bottom:2px solid #bbb;
+    margin-bottom:5px;
+}
+
+div.articlelistitem h1 {
+    font-style:italic;
+    font-size:1.75em;
+    font-family:"Palatino Linotype;
+        Palatino;
+        URW Palladio L;
+        Arial;
+        Helvetica;
+        sans-serif;"
+}
+
+/* Star Rating System */
+.blog-ratingbar {
+	display:block;
+	padding-bottom:0px;
+	margin-bottom:0px;
+	padding-top:2px;
+	margin-top:2px;
+	text-align:center;
+}
+.rater_loading {
+	height: 30px;
+	background: url('images/working.gif') 50% 50% no-repeat;
+}
+.rater_loadingsm {
+	height: 10px;
+	line-height:10px;
+	padding:0;
+	margin:0;
+	background: url('images/working.gif') 50% 50% no-repeat;
+}
+.blog-rating-unit { /* the UL */
+	list-style:none;
+	margin: 0px;
+	padding:0px;
+	height: 30px;
+	position: relative;
+	background: url('images/starrating.png') top left repeat-x;
+	margin:0px auto;
+}
+.blog-rating-unit li{
+    text-indent: -90000px;
+	padding:0px;
+	margin:0px;
+	/*\*/
+	float: left;
+	/* */
+}
+.blog-rating-unit li a {
+	outline: none;
+	display:block;
+	width:30px;
+	height: 30px;
+	text-decoration: none;
+	text-indent: -9000px;
+ 	z-index: 20;
+	position: absolute;
+	padding: 0px;
+}
+.blog-rating-unit li a:hover{
+	background: url('images/starrating.png') left center;
+	z-index: 2;
+	left: 0px;
+}
+.blog-rating-unit a.r1-unit{left: 0px;}
+.blog-rating-unit a.r1-unit:hover{width:30px;}
+.blog-rating-unit a.r2-unit{left:30px;}
+.blog-rating-unit a.r2-unit:hover{width: 60px;}
+.blog-rating-unit a.r3-unit{left: 60px;}
+.blog-rating-unit a.r3-unit:hover{width: 90px;}
+.blog-rating-unit a.r4-unit{left: 90px;}
+.blog-rating-unit a.r4-unit:hover{width: 120px;}
+.blog-rating-unit a.r5-unit{left: 120px;}
+.blog-rating-unit a.r5-unit:hover{width: 150px;}
+.blog-rating-unit a.r6-unit{left: 150px;}
+.blog-rating-unit a.r6-unit:hover{width: 180px;}
+.blog-rating-unit a.r7-unit{left: 180px;}
+.blog-rating-unit a.r7-unit:hover{width: 210px;}
+.blog-rating-unit a.r8-unit{left: 210px;}
+.blog-rating-unit a.r8-unit:hover{width: 240px;}
+.blog-rating-unit a.r9-unit{left: 240px;}
+.blog-rating-unit a.r9-unit:hover{width: 270px;}
+.blog-rating-unit a.r10-unit{left: 270px;}
+.blog-rating-unit a.r10-unit:hover{width: 300px;}
+.blog-rating-unit li.current-rating {
+	background: url('images/starrating.png') left bottom;
+	position: absolute;
+	height: 30px;
+	display: block;
+	text-indent: -9000px;
+	z-index: 1;
+	left:0px;
+}
+
+/* small star rater */
+.blog-small-rating-unit { /* the UL */
+	list-style:none;
+	padding:0px;
+	height: 15px;
+	position: relative;
+	background: url('images/star_small.png') top left repeat-x;
+	margin:0px auto;
+}
+.blog-small-rating-unit li{
+    text-indent: -30000px;
+	padding:0px;
+	margin:0px;
+	/*\*/
+	float: left;
+	/* */
+}
+.blog-small-rating-unit li a {
+	outline: none;
+	display:block;
+	width:15px;
+	height: 15px;
+	text-decoration: none;
+	text-indent: -3000px;
+	z-index: 20;
+	position: absolute;
+	padding: 0px;
+}
+.blog-small-rating-unit li a:hover{
+	background: url('images/star_small.png') left center;
+	z-index: 2;
+	left: 0px;
+	line-height:15px
+}
+.blog-small-rating-unit a.r1-unit{left: 0px;}
+.blog-small-rating-unit a.r1-unit:hover{width:15px;}
+.blog-small-rating-unit a.r2-unit{left:15px;}
+.blog-small-rating-unit a.r2-unit:hover{width: 30px;}
+.blog-small-rating-unit a.r3-unit{left: 30px;}
+.blog-small-rating-unit a.r3-unit:hover{width: 45px;}
+.blog-small-rating-unit a.r4-unit{left: 45px;}
+.blog-small-rating-unit a.r4-unit:hover{width: 60px;}
+.blog-small-rating-unit a.r5-unit{left: 60px;}
+.blog-small-rating-unit a.r5-unit:hover{width: 75px;}
+.blog-small-rating-unit a.r6-unit{left: 75px;}
+.blog-small-rating-unit a.r6-unit:hover{width: 90px;}
+.blog-small-rating-unit a.r7-unit{left: 90px;}
+.blog-small-rating-unit a.r7-unit:hover{width: 105px;}
+.blog-small-rating-unit a.r8-unit{left: 105px;}
+.blog-small-rating-unit a.r8-unit:hover{width: 123px;}
+.blog-small-rating-unit a.r9-unit{left: 120px;}
+.blog-small-rating-unit a.r9-unit:hover{width: 135px;}
+.blog-small-rating-unit a.r10-unit{left: 135px;}
+.blog-small-rating-unit a.r10-unit:hover{width: 150px;}
+.blog-small-rating-unit li.current-rating {
+	background: url('images/star_small.png') left bottom;
+	position: absolute;
+	height: 15px;
+	display: block;
+	text-indent: -3000px;
+	z-index: 1;
+	left:0px;
+	padding:0;
+	line-height:15px;
+}
+/* end of small stuff */
+
+.voted {color:#000;}
+.thanks {color:#36AA3D;}
+.static {color:#5D3126;}
+
+/* end of Star rating system */
+

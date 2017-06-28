@@ -1,0 +1,24 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html {lang_attribute}>
+<head>
+    <title>{page_title}</title>
+</head>
+<body>
+    <h1>{story_title}</h1>
+    {!if story_date}
+    <h3>{story_date}</h3>
+    {!endif}
+    {!if story_author}
+    <b>{lang_contributedby} {story_author}</b>
+    {!endif}
+    <p>{story_introtext}</p>
+    {!if story_bodytext}
+    <p>{story_bodytext}</p>
+    {!endif}
+    <p>{comments_with_count}</p>
+    <hr {xhtml}>
+    <p>{site_name}<br {xhtml}>
+        <a href="{article_url}">{article_url}</a>
+    </p>
+</body>
+</html>

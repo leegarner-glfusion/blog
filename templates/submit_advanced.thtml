@@ -1,0 +1,78 @@
+{# begin {templatelocation} #}
+<script type="text/javascript">
+    // Setup editor path for FCKeditor JS Functions
+    glfusionEditorBasePath = "{site_url}/fckeditor/" ;
+    glfusionStyleBasePath  = "{glfusionStyleBasePath}/";
+</script>
+<script type="text/javascript" src="{pi_url}/js/blog_fckeditor.js">
+</script>
+<form name="blogform" 
+    action="{action_url}" method="post" onsubmit='set_postcontent();'>
+  <table cellspacing="0" cellpadding="3">
+    <tr>
+      <td style="width:10%;" class="alignright"><b>{$LANG_BLOG['author']}:</b></td>
+      <td>{author_name} [ <a href="{status_url}" rel="nofollow">{lang_loginout}</a>
+        {!if allow_signup}
+        | <a href="{site_url}/users.php?mode=new" rel="nofollow">{$LANG12[53]}</a>
+        {!endif}
+        ]
+      </td>
+    </tr>
+    <tr>
+      <td class="alignright"><b>{$LANG_BLOG['title']}:</b></td>
+      <td><input type="text" size="36" maxlength="96" name="title" value="{title}"{xhtml}></td>
+    </tr>
+    <tr>
+      <td class="alignright"><b>{$LANG_BLOG['topic']}:</b></td>
+      <td>
+        <select name="tid">
+          {topic_options}
+        </select>
+      </td>
+    </tr>
+    <tr>
+      <td class="alignright" style="vertical-align:top;"><b>{$LANG_BLOG['postmode']}:</b></td>
+      <td style="vertical-align:top;">
+        <select id="sel_editmode" name="postmode" {change_editormode}>
+          {post_options}
+        </select>
+        <br{xhtml}><span class="warningsmall">{allowed_html}</span>
+      </td>
+    </tr>
+    <tr>
+      <td class="alignright" style="vertical-align:top;"><b>{$LANG_BLOG['content']}:</b></td>
+      <td style="vertical-align:top;width:100%;">
+        <div id="text_editor" style="width:90%;margin-right:20px;display:{show_texteditor};">
+          {$LANG_BLOG['introtext']}:
+          <textarea id="introtext"  style="width:100%; padding:5px 10px 5px 10px;" name="introtext" cols="45" rows="14">{introtext}</textarea>
+          {$LANG_BLOG['bodytext']}:
+          <textarea id="bodytext" style="padding:5px 10px 5px 10px; width:100%;" name="bodytext" cols="45" rows="14">{bodytext}</textarea>
+        </div>
+        {# HTML Editor #}
+        <div id="html_editor" style="margin-right:20px;display:{show_htmleditor};">
+          <div style="vertical-align:top;">
+            {$LANG_BLOG['introtext']}:<br{xhtml}>
+            <textarea id="introhtml" style="width:90%;padding:5px 10px 5px 10px;" name="introhtml" cols="45" rows="12">{introtext}</textarea>
+          </div>
+          <div style="clear:both;"></div>
+          <div style="vertical-align:top;">
+            {$LANG_BLOG['bodytext']}:<br{xhtml}>
+            <textarea id="bodyhtml" style="width:90%;padding:5px 10px 5px 10px;" name="bodyhtml" cols="45" rows="20">{bodytext}</textarea>
+          </div>
+        </div>
+      </td>
+    </tr>
+    {captcha}
+    <tr>
+      <td class="aligncenter" colspan="2">
+        <input type="hidden" name="type" value="blog"{xhtml}>
+        <input type="hidden" name="author_id" value="{author_id}"{xhtml}>
+        <input type="hidden" name="sid" value="{sid}"{xhtml}>
+        <input type="hidden" name="date" value="{date}"{xhtml}>
+        <input name="savesubmission" type="submit" value="{$LANG_BLOG['save']}" {xhtml}>
+        {# <input name="preview" type="submit" value="{$LANG_BLOG['preview']}"{xhtml}> #}
+      </td>
+    </tr>
+  </table>
+</form>
+{# end {templatelocation} #}

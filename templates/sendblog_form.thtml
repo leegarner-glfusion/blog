@@ -1,0 +1,50 @@
+{# begin {templatelocation} #}
+<script type="text/javascript">
+<!--
+window.addEvent('domready',function() {
+    var myValidator = new fValidator("contact");
+});
+-->
+</script>
+{start_block}
+<div class="glfform">
+  <form action="{action_url}" method="post" id="contact">
+    <div>
+      <label for="from">{$LANG_BLOG['from_name']}:</label>
+      <input type="text" id="from" name="from" 
+        size="40" maxlength="96" value="{name}"
+        class="fValidate['required']" {xhtml}>
+    </div>
+    <div>
+      <label for="fromemail">{$LANG_BLOG['from_email']}:</label>
+      <input type="text" id="fromemail" name="fromemail" 
+        size="40" maxlength="96" value="{email}" 
+        class="fValidate['required','email']" {xhtml}>
+    </div>
+    <div>
+      <label for="to">{$LANG_BLOG['to_name']}:</label>
+      <input type="text" id="to" name="to" 
+        size="40" maxlength="96" value="{toname}"
+        class="fValidate['required']" {xhtml}><br{xhtml}>
+    </div>
+    <div>
+      <label for="toemail">{$LANG_BLOG['to_email']}:</label>
+      <input type="text" id="toemail" name="toemail" 
+        size="40" maxlength="96" value="{toemail}"
+        class="fValidate['required','email']" {xhtml}><br{xhtml}>
+    </div>
+    <div>
+      <label for="shortmsg">{$LANG_BLOG['short_msg']}:</label>
+      <textarea id="shortmsg" name="shortmsg" rows="10" cols="50"
+        class="fValidate['required']">{shortmsg}</textarea><br{xhtml}>
+    </div>
+    <div class="warning">{$LANG_BLOG['all_fld_req']}</div>
+    <div style="margin-top:10px;margin-bottom:10px;">{captcha}</div>
+
+    <input type="hidden" name="sid" value="{blog_id}"{xhtml}>
+    <input type="hidden" name="what" value="sendblog"{xhtml}>
+    <input type="submit" value="{$LANG_BLOG['send_message']}"{xhtml}>
+  </form>
+</div>
+{end_block}
+{# end {templatelocation} #}

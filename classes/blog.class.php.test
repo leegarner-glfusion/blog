@@ -1,0 +1,823 @@
+<?php
+//  $Id: product.class.php 5912 2010-04-12 20:54:39Z lgarner $
+/**
+ *  Class to manage blog entries
+ *
+ *  @author     Lee Garner <lee@leegarner.com>
+ *  @copyright  Copyright (c) 2010 Lee Garner <lee@leegarner.com>
+ *  @package    blog
+ *  @version    0.0.1
+ *  @license    http://opensource.org/licenses/gpl-2.0.php 
+ *              GNU Public License v2 or later
+ *  @filesource
+ */
+
+define('BLOG_INVALID_SID', -6);
+
+define('BLOG_PERMISSION_DENIED', -2);
+define('BLOG_EDIT_DENIED', -3);
+define('BLOG_LOADED_OK', 1);
+/**
+ * Constants for Stories:
+ * Saving to database
+ */
+define('BLOG_SAVED', 1);
+define('BLOG_SAVED_SUBMISSION', 2);
+/**
+ * Constants for Stories:
+ * Loading from request.
+ */
+define('BLOG_DUPLICATE_SID', -1);
+define('BLOG_EXISTING_NO_EDIT_PERMISSION', -2);
+define('BLOG_NO_ACCESS_PARAMS', -3);
+define('BLOG_EMPTY_REQUIRED_FIELDS', -4);
+define('BLOG_NO_ACCESS_TOPIC', -5);
+
+/**
+  * Constants for our magic loader
+  */
+define('BLOG_AL_ALPHANUM', 0);
+define('BLOG_AL_INTEGER', 1);
+define('BLOG_AL_CHECKBOX', 2);
+define('BLOG_AL_ID', 3);
+
+/**
+ *  Class for blog entries
+ *  @package blog
+ */
+class Blog
+{
+    var _fields = array(
+        'bid' => BLOG_AL_ID,
+        'uid' => BLOG_AL_INTEGER,
+        'tid' => BLOG_AL_ALPHANUM,
+        'show_topic_icon' => BLOG_AL_CHECKBOX,
+        'draft_flag' => BLOG_AL_CHECKBOX,
+        'statuscode' => BLOG_AL_INTEGER,
+        'featured' => BLOG_AL_INTEGER,
+        'frontpage' => BLOG_AL_INTEGER,
+        'comment_expire' => BLOG_AL_INTEGER,
+        'commentcode' => BLOG_AL_INTEGER,
+        'trackbackcode' => BLOG_AL_INTEGER,
+        'postmode' => BLOG_AL_ALPHANUM,
+        'story_hits' => BLOG_AL_INTEGER,
+        'story_rating' => BLOG_AL_INTEGER,
+        'story_votes' => BLOG_AL_INTEGER,
+        'story_comments' => BLOG_AL_INTEGER,
+        'story_emails' => BLOG_AL_INTEGER,
+        'story_trackbacks' => BLOG_AL_INTEGER,
+        'owner_id' => BLOG_AL_INTEGER,
+        'group_id' => BLOG_AL_INTEGER,
+        'type' => BLOG_AL_ALPHANUM,
+        'hits' => BLOG_AL_INTEGER,
+        'rating' => BLOG_AL_INTEGER,
+        'votes' => BLOG_AL_INTEGER,
+        'comments' => BLOG_AL_INTEGER,
+        'trackbacks' => BLOG_AL_INTEGER,
+         );
+
+
+/*    var $bid = '';
+    var $title = '';
+    var $hits = 0;
+    var $date = '';
+    var $introtext = '';
+    var $bodytext = '';
+    var $postmode = '';
+    var $uid = 0;
+    var $draft_flag = 0;
+    var $tid = '';
+    var $rating = 0;
+    var $votes = 0;
+    var $numemails = 0
+    var $comment_expire = '';
+    var $comments = 0;
+    var $commentcode = 0;
+    var $trackbackcode = 0;
+    var $trackbacks = 0;
+    var $related = '';
+    var $featured = 0;
+    var $show_topic_icon = 0;
+    var $statuscode = 0;
+    var $expire = 0;
+    var $advanced_editor_mode = 1;
+    var $frontpage = 1;
+    var $owner_id, $group_id, $perm_owner, $perm_group, $perm_anon;*/
+
+    var $properties = array():
+    var $_oldbid;
+    var $_originalbid;
+
+    /* Misc display fields we also load from the database for a story: */
+    var $_username = '';
+    var $_fullname = '';
+    var $_photo = '';
+    var $_email = '';
+    var $_topic = '';
+    var $_imageurl = '';
+
+
+    /** Indicate whether the current user is an administrator
+    *   @var boolean */
+    var $isAdmin;
+
+    var $isNew;
+
+    //var $button_types = array();
+
+    /** Array of error messages
+     *  @var mixed */
+    var $Errors = array();
+
+
+    /**
+     *  Constructor.
+     *  Reads in the specified class, if $id is set.  If $id is zero, 
+     *  then a new entry is being created.
+     *
+     *  @param integer $id Optional type ID
+     */
+    function __construct($bid='')
+    {
+        global $_BL_CONF;
+
+        // Assume a new entry unless we get a $bid value
+        $this->isNew = true;
+
+        $bid = COM_sanitizeID($bid, false);
+        if ($bid == '') {
+            $this->date = date('Y-m-d');
+            $this->owner_id = $_USER['uid'];
+            $this->perm_owner = $_BL_CONF['perm_owner'];
+            $this->perm_group = $_BL_CONF['perm_group'];
+            $this->perm_members = $_BL_CONF['perm_members'];
+            $this->perm_anon =  $_BL_CONF['perm_anon'];
+        } else {
+            $this->bid = $bid;
+            if (!$this->Read()) {
+                $this->bid =  '';
+            }
+        }
+
+        $this->isAdmin = SEC_hasRights('blog.admin') ? 1 : 0;
+    }
+
+
+    /**
+    *   Set a property's value.
+    *
+    *   @param  string  $var    Name of property to set.
+    *   @param  mixed   $value  New value for property.
+    */
+    function __set($var, $value='')
+    {
+        global $_fields;
+
+        if (isset($_fields[$var])) {
+            switch ($_fields[$var]) {
+            case BLOG_AL_ID:
+                $this->properties[$var] = COM_sanitizeID($value, false);
+                break;
+
+            case BLOG_AL_ALPNANUM:
+                // String values
+                $this->properties[$var] = trim($value);
+                break;
+
+            case BLOG_AL_INTEGER:
+                // Integer values
+                $this->properties[$var] = (int)$value;
+                break;
+
+            case BLOG_AL_FLOAT:
+                $this->properties[$var] = (float)$value);
+                break;
+
+            default:
+                // Undefined values (do nothing)
+                break;
+            }
+        }
+
+        // Additional variables or cleanup
+        switch ($var) {
+        case '_username':
+        case '_fullname':
+        case '_photo':
+        case '_email':
+        case '_topic':
+        case '_imageurl':
+            $this->properties[$var] = trim($value);
+            break;
+        }
+
+    }
+
+
+    /**
+     *  Sets all variables to the matching values from $rows.
+     *
+     *  @param  array   $row        Array of values, from DB or $_POST
+     *  @param  boolean $fromDB     True if read from DB, false if from $_POST
+     */
+    function SetVars($row, $fromDB=false)
+    {
+        if (!is_array($row)) return;
+
+        $this->bid = $A['bid'];
+        $this->title = $A['title'];
+        $this->introtext= $A['introtext'];
+        $this->bodytext= $A['bodytext'];
+        $this->hits = $A['hits'];
+        $this->date = $A['date'];
+        $this->commentcode = $A['commentcode'];
+        $this->owner_id = $A['owner_id'];
+        $this->group_id = $A['group_id'];
+        $this->perm_owner = $A['perm_owner'];
+        $this->perm_group = $A['perm_group'];
+        $this->perm_members = $A['perm_members'];
+        $this->perm_anon = $A['perm_anon'];
+        $this->uid = $A['uid'];
+        $this->commentcode = $A['commentcode'];
+        $this->draft_flag = $A['draft_flag'];
+        $this->votes = $A['votes'];
+        $this->numemails = $A['numemails'];
+        $this->comments = $A['comments']
+        $this->commentcode = $A['commentcode'];
+        $this->trackbackcode = $A['trackbackcode'];
+        $this->trackbacks = $A['trackbacks'];
+        $this->statuscode = $A['statuscode'];
+        $this->show_topic_icon = 'show_topic_icon'];
+        $this->advanced_editor_mode = 'advanced_editor_mode'];
+        $this->frontpage = 'frontpage'];
+        $this->expire = $A['expire'];
+        $this->comment_expire = $A['comment_expire'];
+        $this->postmode = $A['postmode'];
+        $this->tid = $A['tid'];
+        $this->related = $A['relasted'];
+        $this->rating = $A['rating'];
+
+        if (!$fromDB) {
+            $this->_username = $A['username'];
+            $this->_fullname = $A['fullname'];
+            $this->_photo = $A['_photo'];
+            $this->_email = $A['_email'];
+            $this->_topic = $A['_topic'];
+            $this->_imageurl = $A['_imageurl'];
+        }
+
+    }
+
+
+    /**
+     *  Read a specific record and populate the local values.
+     *
+     *  @param  integer $id Optional ID.  Current ID is used if zero.
+     *  @return boolean     True if a record was read, False on failure
+     */
+    function Read($bid = '')
+    {
+        global $_TABLES;
+
+        if ($bid == '')
+            $bid = $this->bid;
+        else
+            $bid = COM_sanitizeID($bid, false);
+
+        if ($bid == '') {
+            $this->error = 'Invalid ID in Read()';
+            return false;
+        }
+
+        $sql = "SELECT b.*,
+                    u.username, u.fullname, u.photo, u.email,
+                    t.topic, t.imageurl
+            FROM {$_TABLES['blog']} b
+            LEFT JOIN {$_TABLES['users']} u
+                ON u.uid = s.uid
+            LEFT JOIN {$_TABLES['topics']} t
+                ON t.tid = s.tid
+            WHERE b.bid='$bid'";
+        $result = DB_query($sql);
+        if (!$result || DB_numRows($result != 1)) {
+            return false;
+        } else {
+            $row = DB_fetchArray($result, false);
+            $this->SetVars($row, true);
+            $this->isNew = false;
+            $this->_originalbid = $this->bid;
+            return true;
+        }
+    }
+
+
+    /**
+     *  Save the current values to the database.
+     *  Appends error messages to the $Errors property.
+     *
+     *  @param  array   $A      Optional array of values from $_POST
+     *  @return boolean         True if no errors, False otherwise
+     */
+    function Save($A = '', $table = '')
+    {
+        if (is_array($A)) {
+            $this->SetVars($A);
+        }
+
+    }
+
+
+    function _SaveSubmission()
+    {
+        global $_USER, $_CONF, $_TABLES;
+        $this->sid = COM_makeSid();
+
+        if (COM_isAnonUser()) {
+            $this->uid = 1;
+        } else {
+            $this->uid = $_USER['uid'];
+        }
+
+        $tmptid = DB_escapeString(COM_sanitizeID($this->tid));
+        $result = DB_query("SELECT 
+                group_id, perm_owner, perm_group, perm_members, perm_anon 
+            FROM {$_TABLES['topics']} 
+            WHERE tid = '{$tmptid}'" .
+            COM_getTopicSQL('AND'));
+
+        if (DB_numRows($result) == 0) {
+            // user doesn't have access to this topic - bail
+            return STORY_NO_ACCESS_TOPIC;
+        }
+
+        $T = DB_fetchArray($result, false);
+
+        if (($_CONF['storysubmission'] == 1) && !SEC_hasRights('blog.submit')) {
+            $this->sid = DB_escapeString($this->sid);
+            $this->tid = $tmptid;
+            $this->title = DB_escapeString($this->title);
+            $this->introtext = DB_escapeString($this->introtext);
+            $this->bodytext = DB_escapeString($this->bodytext);
+            $this->postmode = DB_escapeString($this->postmode);
+            $sql = "INSERT INTO {$_TABLES['blog_submission']} SET 
+                sid = '" . DB_escapeString($this->sid) . "',
+                tid = '" . DB_escapeString($this->tid) . "',
+                uid = '" . (int)$this->uid . "',
+                title = '" . DB_escapeString($this->title) . "',
+                introtext = '" . DB_escapeString($this->introtext) . "',
+                bodytext = '" . DB_escapeString($this->bodytext) . "',
+                date = '" . DB_escapeString($this->date) . "',
+                postmode = '" . DB_escapeString($this->postmode) . "'";
+            DB_query($sql);
+            return STORY_SAVED_SUBMISSION;
+        } else {
+            // post this story directly. First establish the necessary missing data.
+            $this->_sanitizeData();
+
+            if (!isset($_CONF['show_topic_icon'])) {
+                $_CONF['show_topic_icon'] = 1;
+            }
+
+            if (DB_getItem($_TABLES['topics'], 'archive_flag', 
+                "tid = '{$tmptid}'") == 1) {
+                $this->frontpage = 0;
+
+                        } elseif (isset($_CONF['frontpage'])) {
+                $this->_frontpage = $_CONF['frontpage'];
+            } else {
+                $this->_frontpage = 1;
+            }
+
+            $this->oldbid = $this->bid;
+            $this->date = mktime();
+            $this->featured = 0;
+            $this->commentcode = $_CONF['comment_code'];
+            $this->trackbackcode = $_CONF['trackback_code'];
+            $this->statuscode = 0;
+            $this->show_topic_icon = $_CONF['show_topic_icon'];
+            if (COM_isAnonUser()) {
+                $this->owner_id = 1;
+            } else {
+                $this->owner_id = $_USER['uid'];
+            }
+            $this->group_id = $T['group_id'];
+            $this->perm_owner = $T['perm_owner'];
+            $this->perm_group = $T['perm_group'];
+            $this->perm_members = $T['perm_members'];
+            $this->perm_anon = $T['perm_anon'];
+
+            $this->SaveProduction();
+            PLG_itemSaved($this->bid, 'article');
+
+            COM_rdfUpToDateCheck();
+            COM_olderStuff();
+
+            return STORY_SAVED;
+        }
+
+
+    function _SaveProduction()
+    {
+        global $_TABLES, $_BL_CONF, $_fields;
+
+        // If we're saving to the archive topic, then un-feature.
+        if (DB_getItem($_TABLES['topics'], 'tid', "archive_flag=1") == 
+                    $this->_tid) {
+            $this->featured = 0;
+            $this->frontpage = 0;
+            $this->statuscode = BLOG_ARCHIVE_ON_EXPIRE;
+        }
+
+        // there can only be one non-draft featured story
+        if ($this->featured == '1' && 
+            $this->draft_flag == 0 &&
+            $this->_date <= time()) {
+            if ($this->frontpage == 1) {
+                // un-feature any featured frontpage story
+                DB_query("UPDATE {$_TABLES['stories']} 
+                        SET featured = 0 
+                        WHERE featured = 1 
+                        AND draft_flag = 0 
+                        AND frontpage = 1 
+                        AND date <= NOW()");
+            }
+
+            // un-feature any featured story in the same topic
+            DB_query("UPDATE {$_TABLES['stories']} 
+                        SET featured = 0 
+                        WHERE featured = 1 
+                        AND draft_flag = 0 
+                        AND tid = '{$this->_tid}' 
+                        AND date <= NOW()");
+        }
+
+        if ($this->bid != $this->_originalbid) {
+            $checkbid = DB_escapeString($this->_originalbid);
+            $newbid = DB_escapeString($this->bid);
+            $result = DB_query("SELECT 1 FROM {$_TABLES['blog']}
+                        WHERE bid='{$checksid}'");
+            if ($result && DB_numRows($result) > 0) {
+                $oldArticleExists = true;
+            } else {
+                $oldArticleExists = false;
+            }
+
+            if ($oldArticleExists) {
+                DB_query("UPDATE {$_TABLES['comments']} 
+                    SET sid='$newsid' 
+                    WHERE type='blog' and sid='$checksid'");
+
+                DB_query("UPDATE {$_TABLES['article_images']} 
+                    SET ai_sid = '{$newsid}' 
+                    WHERE ai_sid = '{$checksid}'";
+
+                DB_query("UPDATE {$_TABLES['trackback']} 
+                    SET sid='{$newsid}' 
+                    WHERE sid='{$checksid}' AND type='{$_BL_CONF['pi_name']}'";
+
+                DB_query("UPDATE {$_TABLES['rating']} 
+                    SET item_id='{$newsid}' 
+                    WHERE item_id='{$checksid}' AND type='{$_BL_CONF['pi_name']}'";
+                DB_query("UPDATE {$_TABLES['rating_votes']} 
+                    SET item_id='{$newsid}' 
+                    WHERE item_id='{$checksid}' AND type='{$_BL_CONF['pi_name']}'";
+                CACHE_remove_instance('blog_'.$this->_originalbid);
+            }
+        }
+
+        /* Acquire Comment Count */
+        $this->comments = DB_count($_TABLES['comments'], 
+                    array('type', 'sid'),
+                    array($_BL_CONF['pi_name'], $this->bid));
+        
+        /* Acquire Rating / Votes */
+        list($rating_id, $rating, $votes) = 
+            RATING_getRating($_BL_CONF['pi_name'], $this->bid );
+        $this->rating = $rating;
+        $this->votes = $votes;
+
+        $this->related = implode("\n", $this->extractLinks());
+
+        if ($this->isNew) {
+            $sql1 = "INSERT INTO {$_TABLES['blog']} SET "
+            $sql2 = '';
+        } else {
+            $sql1 = "UPDATE {$_TABLES['blog']} SET "
+            $sql2 = " WHERE bid='" . DB_escapeString($this->_originalbid) . "'";
+        }
+
+        // Insert or update the record, as appropriate
+        if ($this->isNew) {
+            $sql = "INSERT INTO {$_TABLES['blog']} SET ";
+            $sql1 = '';
+        } else {
+            $sql = "UPDATE {$_TABLES['blog']} SET ";
+            $sql1 = " WHERE bid='" . DB_escapeString($this->originalbid)."'";
+        }
+
+        $sqltmp = array();
+        foreach ($_fields as $varname=>$vartype) {
+            switch ($vartype]) {
+            case BLOG_AL_ID:
+                $value = COM_sanitizeID($this->$varname, false);
+                break;
+
+            case BLOG_AL_ALPNANUM:
+                // String values
+                $value = DB_escapeString($this->$varname);
+                break;
+
+            case BLOG_AL_INTEGER:
+                // Integer values
+                $value = (int)$this->$varname;
+                break;
+
+            case BLOG_AL_FLOAT:
+                $value = (float)$this->$varname;
+                break;
+
+            default:
+                // Undefined values (do nothing)
+                break;
+            }
+            $sqltmp[] = " $varname = '$value'";
+        }
+
+        $sql3 = implode(',', $sqltmp;
+
+        $sql = "$sql1 $sql3 $sql2";
+        DB_query($sql);           
+
+    }
+
+
+    /**
+     *  Delete the current product record from the database
+     */
+    function Delete($table = 'blog')
+    {
+        global $_TABLES, $_CONF;
+
+        if ($this->bid == '' || !$this->hasAccess(3)) {
+            return false;
+        }
+
+        if ($table != 'blog') $table = 'blog_submission';
+
+        // Verify full access to the article AND its topic
+        $access = SEC_hasAccess($this->owner_id, $this->group_id, 
+                $this->perm_owner, $this->perm_group, 
+                $this->perm_members, $this->perm_anon);
+        $access = min($access, SEC_hasTopicAccess($this->tid));
+        if ($access < 3) {
+            COM_accessLog("User {$_USER['username']} tried to illegally delete story $sid.");
+            $output = COM_refresh($_CONF['site_url']);
+            if (COM_isAnonUser()) {
+                return PLG_RET_AUTH_FAILED;
+            } else {
+                return PLG_RET_PERMISSION_DENIED;
+            }
+        }
+
+        // Find and delete any images associated with this article.
+        $imgresult = DB_query("SELECT ai_filename 
+                        FROM {$_TABLES['article_images']} 
+                        WHERE ai_sid = '" . DB_escapeString($this->bid) . "'");
+        while ($A = DB_fetchArray($imgresult, false) {
+            $this->DeleteImage($A['ai_filename']);
+        }
+        DB_delete($_TABLES['article_images'], 'ai_sid', i
+                    DB_escapeString($this->bid));
+
+        // Delete comments, trackbacks
+        DB_delete($_TABLES['comments'], 
+                array('sid', 'type'), array($this->bid, $_BL_CONF['pi_name'])); 
+        DB_delete($_TABLES[$table], 'bid', $this->bid);
+
+        // Notify other plugins
+        PLG_itemDeleted($this->bid, $_BL_CONF['pi_name']);
+
+        COM_rdfUpToDateCheck ();
+        COM_olderStuff ();
+
+        $output = COM_refresh(BLOG_ADMIN_URL . '/index.php?msg=10');
+
+        return PLG_RET_OK;
+    }
+
+
+    function DeleteImage($image)
+    {
+        global $_CONF;
+
+        if (empty ($image)) {
+            return;
+        }
+
+        $filename = $_CONF['path_images'] . 'articles/' . $image;
+        if (!@unlink ($filename)) {
+            // log the problem but don't abort the script
+            COM_errorLog ('Unable to remove the following image from the article: ' . $filename);
+        }
+
+        // remove unscaled image, if it exists
+        $lFilename_large = substr_replace ($image, '_original.',
+                                       strrpos ($image, '.'), 1);
+        $lFilename_large_complete = $_CONF['path_images'] . 'articles/'
+                              . $lFilename_large;
+        if (file_exists ($lFilename_large_complete)) {
+            if (!@unlink ($lFilename_large_complete)) {
+                // again, log the problem but don't abort the script
+                COM_errorLog ('Unable to remove the following image from the article: ' . $lFilename_large_complete);
+            }
+        }
+    }
+
+
+    /**
+     *  Determines if the current record is valid.
+     *
+     *  @return boolean     True if ok, False when first test fails.
+     */
+    function isValidRecord()
+    {
+        global $LANG_PP;
+
+        // Check that basic required fields are filled in
+        if (empty($this->title) == '')
+            $this->Errors[] = $LANG_BL['err_missing_title'];
+
+        if (empty($this->content) == '')
+            $this->Errors[] = $LANG_PP['err_missing_content'];
+
+        if (!empty($this->Errors)) {
+            PAYPAL_debug('Errors encountered: ' . print_r($this->Errors,true));
+            return false;
+        } else {
+            PAYPAL_debug('isValidRecord(): No errors');
+            return true;
+        }
+    }
+
+
+    /**
+    *   Check that the current user has at least a specified access level
+    *
+    *   @param  integer     Required access level, default=3
+    *   @return boolean     True if the user has access, False if not.
+    */
+    function hasAccess($level=3)
+    {
+        if (SEC_hasRights('blog.admin'))
+            return true;        // Admin has all rights
+
+        $access = SEC_hasAccess($A['owner_id'], $A['group_id'],
+                    $A['perm_owner'], $A['perm_group'], 
+                    $A['perm_members'], $A['perm_anon']);
+
+        return $access >= $level ? true : false;
+
+    }
+
+
+    /**
+     *  Creates the edit form
+     *  @param integer $id Optional ID, current record used if zero
+     *  @return string HTML for edit form
+     */
+    function Edit($bid = '')
+    {
+        return $retval;
+
+    }   // function showForm()
+
+
+    /**
+     *  Sets the "enabled" field to the specified value.
+     *
+     *  @param  integer $id ID number of element to modify
+     *  @param  integer $value New value to set
+     *  @return         New value, or old value upon failure
+     */
+    function _toggle($oldvalue, $varname, $bid='')
+    {
+        global $_TABLES;
+
+        $bid = COM_sanitizeID($bid, false);
+        if ($bid == '') {
+            if (is_object($this))
+                $bid = $this->bid;
+            else
+                return;
+        }
+        $oldvalue = $oldvalue == 0 ? 0 : 1;
+
+        // If it's still an invalid ID, return the old value
+        if ($bid = '')
+            return $oldvalue;
+
+        // Determing the new value (opposite the old)
+        $newvalue = $oldvalue == 1 ? 0 : 1;
+
+        $sql = "UPDATE {$_TABLES['blog_items']}
+                SET $varname=$newvalue
+                WHERE bid=$bid";
+        //echo $sql;die;
+        DB_query($sql);
+
+        return $newvalue;
+    }
+
+
+    /**
+     *  Sets the "enabled" field to the specified value.
+     *
+     *  @param  integer $id ID number of element to modify
+     *  @param  integer $value New value to set
+     *  @return         New value, or old value upon failure
+     */
+    function toggleEnabled($oldvalue, $bid='')
+    {
+        return Blog::_toggle($oldvalue, 'enabled', $bid);
+    }
+
+    /**
+    *   Display the detail page for the product.
+    *
+    *   @return string      HTML for the product page.
+    */
+    function Detail()
+    {
+        global $_CONF, $_PP_CONF, $_TABLES, $LANG_PP, $_USER;
+
+        USES_lib_comments();
+
+    }
+
+    /**
+    *   Create a formatted display-ready version of the error messages.
+    *
+    *   @return string      Formatted error messages.
+    */
+    function PrintErrors()
+    {
+        $retval = '';
+        foreach($this->Errors as $key=>$msg) {
+            $retval .= "<li>$msg</li>\n";
+        }
+        return $retval;
+    }
+
+
+    function extractLinks($maxlength = 26)
+    {
+        $rel = array();
+
+        /* Only match anchor tags that contain 'href="<something>"'
+         */
+        preg_match_all("/<a[^>]*href=[\"']([^\"']*)[\"'][^>]*>(.*?)<\/a>/i",
+             $this->introtext . ' ' . $this->bodytext,
+             $matches);
+        for ($i=0; $i< count($matches[0]); $i++) {
+            $matches[2][$i] = strip_tags($matches[2][$i]);
+            if ( !MBYTE_strlen(trim($matches[2][$i])) ) {
+                $matches[2][$i] = strip_tags( $matches[1][$i] );
+            }
+
+            // if link is too long, shorten it and add ... at the end
+            if (($maxlength > 0 ) && 
+                    MBYTE_strlen($matches[2][$i]) > $maxlength) {
+                $matches[2][$i] = substr($matches[2][$i], 0, $maxlength - 3) 
+                    . '...';
+            }
+
+            $rel[] = '<a href="' . $matches[1][$i] . '">'
+               . str_replace(array("\015", "\012"), '', $matches[2][$i])
+               . '</a>';
+        }
+
+        return $rel;
+    }
+
+        
+    function _sanitizeData()
+    {
+        if ($this->draft_flag === 'on') {
+            $this->draft_flag = 1;
+        } elseif ($this->draft_flag != 1) {
+            $this->draft_flag = 0;
+        }
+
+        if ($this->show_topic_icon === 'on') {
+            $this->show_topic_icon = 1;
+        } elseif ($this->show_topic_icon != 1) {
+            $this->show_topic_icon = 0;
+        }
+    }
+
+
+
+}   // class Product
+
+
+?>

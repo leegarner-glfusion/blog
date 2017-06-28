@@ -1,0 +1,21 @@
+{# begin {templatelocation} #}
+<div class="articleitem">
+  <a href="{item_url}">
+    <h1>{article_title}</h1>
+  </a>
+  <span style="float:right;">
+    {edit_icon}<br />
+    <a href="{list_url}">Back to List</a>
+  </span>
+  <p class="story-information">
+    {article_date}<br {xhtml}>
+    {$LANG_ARTICLE['by']}&nbsp;{article_author}
+  </p>
+  <p>
+  {article_content}
+  </p>
+  <p>
+  {comments}
+  </p>
+</div>
+{# end {templatelocation} #}

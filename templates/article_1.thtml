@@ -1,0 +1,20 @@
+{# begin {templatelocation} #}
+{blockheader}
+
+<div class="alignright">
+  {$LANG_ARTICLE[127]}:&nbsp;
+  <select name="article_author" onchange='document.location="{pi_url}/index.php?article_author="+this.value;'>
+    <option value=''>-- All --</option>
+    {article_author_select}
+  </select><br />
+  [ <a href="{site_url}/submit.php?type=article">{$LANG_ARTICLE[116]}</a> ]
+</div>
+<div style="clear:both:">
+  {article}
+</div>
+<div style="clear:both:">
+  {page_navigation}
+</div>
+
+{blockfooter}
+{# end {templatelocation} #}

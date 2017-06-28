@@ -1,0 +1,236 @@
+<?php
+
+
+/**
+* Shows the blog editor
+*
+* @param  string  $mode   Used to see if we are moderating a blog or simply editing one
+* @param  string  $bid    ID of blog to edit
+* @global array core config vars
+* @global array core group data
+* @global array core table data
+* @global array core user data
+* @global array blog plugin config vars
+* @global array blog plugin lang vars
+* @global array core lang access vars
+* @return string HTML for the blog editor form
+*
+*/
+function BLOG_edit($mode, $bid = '')
+{
+    global $_CONF, $_GROUPS, $_TABLES, $_USER, $_ARTICLE_CONF, $LANG24, $LANG12,
+           $LANG_ARTICLE_ADMIN, $LANG_ACCESS, $LANG_ADMIN, $MESSAGE, $LANG_postmodes;
+
+    $retval = '';
+
+    if ($_CONF['advanced_editor'] && $_ARTICLE_CONF['adveditor']) {
+        $editor_type = '_advanced';
+        $postmode_adv = 'selected="selected"';
+        $postmode_html = '';
+    } else {
+        $editor_type = '';
+        $postmode_adv = '';
+        $postmode_html = 'selected="selected"';
+    }
+
+    $T = new Template(BLOG_PI_PATH . '/templates/');
+    $T->set_file('editor', "editor{$editor_type}.thtml");
+
+    $is_admin = SEC_hasRights('blog.edit,blog.admin','OR');
+    if ($is_admin) {
+        $T->set_var('is_admin', 'true');
+        $action_url = BLOG_ADMIN_URL . '/index.php';
+    } else {
+        $action_url = $_CONF['site_url'] . '/submit.php?type=' . $_ARTICLE_CONF['pi_name'];
+    }
+
+    $T->set_var(array(
+        'lang_blog_list'    => $LANG_ARTICLE_ADMIN[53],
+        'lang_new_blog'     => $LANG_ARTICLE_ADMIN[51],
+        'lang_admin_home'   => $LANG_ADMIN['admin_home'],
+        'instructions'      => $LANG_ARTICLE_ADMIN[29],
+        'lang_comments'     => $LANG_ARTICLE_ADMIN[68],
+        'action_url'        => $action_url,
+    ) );
+
+    if ($editor_type == '_advanced') {
+        $T->set_var('show_adveditor','');
+        $T->set_var('show_htmleditor','none');
+    } else {
+        $T->set_var('show_adveditor','none');
+        $T->set_var('show_htmleditor','');
+    }
+    $post_options = "<option value=\"html\" $postmode_html>{$LANG_postmodes['html']}</option>";
+    $post_options .= "<option value=\"adveditor\" $postmode_adv>{$LANG24[86]}</option>";
+    $T->set_var('lang_postmode', $LANG24[4]);
+    $T->set_var('post_options',$post_options);
+    //$T->set_var('change_editormode', 'onchange="change_editmode(this);"');
+    $T->set_var('site_url', $_CONF['site_url']);
+    $T->set_var('glfusionStyleBasePath', $_CONF['site_url']. '/fckeditor');
+    $T->set_var('gltoken_name', CSRF_TOKEN);
+    $T->set_var('gltoken', SEC_createToken());
+
+    if ($mode <> 'editsubmission' && !empty($bid)) {
+        // editing an existing item, so get data from DB for access check etc.
+        $result = DB_query("SELECT * 
+                    FROM {$_TABLES['blog_items']} 
+                    WHERE bid ='$bid'");
+        if (DB_numRows($result) !== 1) {
+            $msg = COM_startBlock($LANG_ARTICLE_ADMIN[24], '', COM_getBlockTemplate ('_msg_block', 'header'));
+            $msg .= $LANG_ARTICLE_ADMIN[25];
+            $msg .= COM_endBlock(COM_getBlockTemplate ('_msg_block', 'footer'));
+            return $msg;
+        }
+        $A = DB_fetchArray($result);
+        $access = SEC_hasAccess($A['owner_id'], $A['group_id'],
+                    $A['perm_owner'], $A['perm_group'],
+                    $A['perm_members'], $A['perm_anon']);
+        if ($access == 0 OR $access == 2) {
+            $retval .= COM_startBlock($LANG_ARTICLE_ADMIN[16], '', 
+                        COM_getBlockTemplate('_msg_block', 'header'));
+            $retval .= $LANG_ARTICLE_ADMIN[17];
+            $retval .= COM_endBlock(COM_getBlockTemplate ('_msg_block', 'footer'));
+            COM_accessLog("User {$_USER['username']} tried to illegally submit or edit blog $bid.");
+            return $retval;
+        }
+    } else {
+        if ($mode == 'editsubmission') {
+            // editing a submission, so get data from submissions table
+            $result = DB_query ("SELECT * FROM {$_TABLES['blog_submission']} 
+                        WHERE bid = '$bid'");
+            $A = DB_fetchArray($result);
+        } else {
+            // new item so set default values
+            $A['bid'] = COM_makesid();
+            $A['content'] = '';
+            $A['title']= '';
+            $A['date']= date('Y-m-d');
+            $A['owner_id'] = $_USER['uid'];
+        }
+        $A['hits'] = 0;
+        if (isset ($_GROUPS['Blog Admin'])) {
+            $A['group_id'] = $_GROUPS['Blog Admin'];
+        } else {
+            $A['group_id'] = SEC_getFeatureGroup ('blog.edit');
+        }
+        SEC_setDefaultPermissions ($A, $_ARTICLE_CONF['default_permissions']);
+        $access = 3;
+    }
+
+    $retval .= COM_startBlock ($LANG_ARTICLE_ADMIN[1], '', COM_getBlockTemplate ('_admin_block', 'header'));
+
+    $T->set_var('blog_id', $A['bid']);
+    if (!empty($bid) && SEC_hasRights('blog.edit')) {
+        $delbutton = '<input type="submit" value="' . $LANG_ADMIN['delete'] . '" name="mode"%s' . XHTML . '>';
+        $jsconfirm = ' onclick="return confirm(\'' . $MESSAGE[76] . '\');"';
+        $T->set_var ('delete_option', sprintf ($delbutton, $jsconfirm));
+        $T->set_var ('delete_option_no_confirmation', sprintf ($delbutton, ''));
+        if ($mode == 'editsubmission') {
+            $T->set_var('submission_option',
+                '<input type="hidden" name="type" value="submission"' . XHTML . '>');
+        }
+    }
+    $T->set_var(array(
+        'lang_blogtitle'    => $LANG_ARTICLE_ADMIN[3],
+        'blog_title'        => htmlspecialchars($A['title']),
+        'lang_blogdate'     => $LANG_ARTICLE_ADMIN[64],
+        'blog_date'         => $A['date'],
+    ) );
+
+    if ($A['commentcode'] == 0) {
+        $T->set_var('commentcode_checked', 'checked="checked"');
+    } else {
+        $T->set_var('commentcode_checked', '');
+    }
+    
+    $T->set_var('lang_blogcontent', $LANG_ARTICLE_ADMIN[9]);
+    $T->set_var('blog_content', $A['content']);
+    //$T->set_var('lang_save', $LANG_ADMIN['save']);
+    $T->set_var('lang_cancel', $LANG_ADMIN['cancel']);
+
+    // user access info
+    $T->set_var('lang_accessrights', $LANG_ACCESS['accessrights']);
+    $T->set_var('lang_owner', $LANG_ACCESS['owner']);
+    $ownername = COM_getDisplayName ($A['owner_id']);
+    $T->set_var('owner_username', DB_getItem($_TABLES['users'], 'username', "uid = {$A['owner_id']}"));
+    $T->set_var('owner_name', $ownername);
+    $T->set_var('owner', $ownername);
+    $T->set_var('blog_ownerid', $A['owner_id']);
+    $T->set_var('lang_group', $LANG_ACCESS['group']);
+    $T->set_var('group_dropdown', SEC_getGroupDropdown ($A['group_id'], $access));
+    $T->set_var('lang_permissions', $LANG_ACCESS['permissions']);
+    $T->set_var('lang_permissionskey', $LANG_ACCESS['permissionskey']);
+    $T->set_var('permissions_editor', SEC_getPermissionsHTML($A['perm_owner'],$A['perm_group'],$A['perm_members'],$A['perm_anon']));
+    $T->set_var('lang_lockmsg', $LANG_ACCESS['permmsg']);
+    $T->set_var('gltoken_name', CSRF_TOKEN);
+    $T->set_var('gltoken', SEC_createToken());
+    $T->parse('output', 'editor');
+    $retval .= $T->finish($T->get_var('output'));
+
+    $retval .= COM_endBlock (COM_getBlockTemplate ('_admin_block', 'footer'));
+
+    return $retval;
+}
+
+
+/**
+*   Display the site header, with or without blocks according to configuration.
+*
+*   @param  string  $title  Title to put in header
+*   @param  string  $meta   Optional header code
+*   @return string          HTML for site header, from COM_siteHeader()
+*/
+function BLOG_siteHeader($title='', $meta='')
+{
+    global $_ARTICLE_CONF;
+
+    $retval = '';
+
+    switch($_ARTICLE_CONF['displayblocks']) {
+    case 2:     // right only
+    case 0:     // none
+        $retval .= COM_siteHeader('none', $title, $meta);
+        break;
+
+    case 1:     // left only
+    case 3:     // both
+    default :
+        $retval .= COM_siteHeader('menu', $title, $meta);
+        break;
+    }
+
+    return $retval;
+
+}
+
+
+/**
+*   Display the site footer, with or without blocks as configured.
+*
+*   @return string      HTML for site footer, from COM_siteFooter()
+*/
+function BLOG_siteFooter()
+{
+    global $_ARTICLE_CONF;
+
+    $retval = '';
+
+    switch($_ARTICLE_CONF['displayblocks']) {
+    case 2 : // right only
+    case 3 : // left and right
+        $retval .= COM_siteFooter(true);
+        break;
+
+    case 0: // none
+    case 1: // left only
+    default :
+        $retval .= COM_siteFooter();
+        break;
+    }
+
+    return $retval;
+
+}
+
+
+?>
