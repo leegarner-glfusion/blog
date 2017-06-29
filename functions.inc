@@ -1,5 +1,4 @@
 <?php
-//  $Id: functions.inc 19 2011-04-04 17:15:51Z root $
 /**
 *   glFusion API functions for the Blog plugin.
 *
@@ -16,15 +15,18 @@ if (!defined('GVERSION')) {
     die('This file can not be used on its own.');
 }
 
+include_once $_CONF['path_system'] . 'classes/topic.class.php';
+Topic::Current($topic);
+
 // Check and see if we need to load the plugin configuration
 if (!isset($_BLOG_CONF['loginrequired'])) {
     require_once $_CONF['path_system'] . 'classes/config.class.php';
     $bl_config = config::get_instance();
-    $_BLOG_CONF = $bl_config->get_config('blogs');
+    $_BLOG_CONF = $bl_config->get_config('blog');
 }
 
 /** Additional config items and table definitions are added here */
-require_once dirname(__FILE__) . '/blog.php';
+require_once __DIR__ . '/blog.php';
 
 // Define paths and urls
 define('BLOG_PI_PATH', 
@@ -54,15 +56,15 @@ define('BLOG_EXPIRE_NONE',     0);
 define('BLOG_EXPIRE_ARCHIVE',  10);
 define('BLOG_EXPIRE_DELETE',   11);
 
-if (file_exists(BLOG_PI_PATH . 'config.php')) {
+if (file_exists(__DIR__ . '/config.php')) {
     /** Include local configuration overrides */
-    include_once BLOG_PI_PATH . 'config.php';
+    include_once __DIR__ . 'config.php';
 }
 
 // Now we'll set some global variables that get used a lot, to save
 // some DB lookups and function calls
-$_BLOG_CONF['archivetid'] = 
-            DB_getItem($_TABLES['topics'], 'tid', "archive_flag=1");
+//$_BLOG_CONF['archivetid'] =
+//            DB_getItem($_TABLES['topics'], 'tid', "archive_flag=1");
 $_BLOG_CONF['today'] = date('Y-m-d H:i:s');
 
 // Global 'loginrequired' overrides the plugin's configuration
@@ -153,10 +155,11 @@ function plugin_getwhatsnew_blog($getlist=true)
     $retval = '';
 
     // Get newest items
+                //(date >= (DATE_SUB(NOW(), INTERVAL {$_BLOG_CONF['newbloginterval']} DAY))) " . 
     $sql = "SELECT sid,title 
             FROM {$_TABLES['blogs']} 
             WHERE 
-                (date >= (DATE_SUB(NOW(), INTERVAL {$_BLOG_CONF['newbloginterval']} DAY)))" . 
+                (date >= (DATE_SUB(NOW(), INTERVAL 14 DAY))) " . 
                 COM_getPermSQL( 'AND' ) . 
             ' ORDER BY date DESC LIMIT 15';
     //echo $sql;die;
@@ -1116,7 +1119,7 @@ function blog_sendNotification ($table, $A)
 */
 function plugin_geticon_blog()
 {
-    return BLOG_URL . '/images/blogs.png';
+    return BLOG_URL . '/images/blog.png';
 }
 
 
@@ -1332,12 +1335,12 @@ function plugin_getheadercss_blog()
 */
 function plugin_getheaderjs_blog()
 {
-    global $_CONF;
+/*    global $_CONF;
 
     $files = array(
         $_CONF['path_html'] . '/blog/js/toggle.js',
     );
-    return $files;
+    return $files;*/
 }
 
 
@@ -1365,11 +1368,14 @@ function plugin_runScheduledTask_blog()
             FROM {$_TABLES['blogs']} 
             WHERE (expire <= NOW()) 
             AND (statuscode = '" . BLOG_EXPIRE_DELETE . "'";
-    if (empty($_BLOG_CONF['archivetid'])) {
+    $archive_tid = Topic::archiveID();
+    //if (empty($_BLOG_CONF['archivetid'])) {
+    if (empty($archive_tid)) {
         $asql .= ')';
     } else {
         $asql .= ' OR statuscode = ' . BLOG_EXPIRE_ARCHIVE . ") 
-            AND tid != '{$_BLOG_CONF['archivetid']}'";
+            AND tid != '{$archivetid}'";
+            //AND tid != '{$_BLOG_CONF['archivetid']}'";
     }
     $expiresql = DB_query($asql);
 
@@ -1378,8 +1384,9 @@ function plugin_runScheduledTask_blog()
     while (list ($sid, $expiretopic, $title, $expire, $statuscode) =
             DB_fetchArray($expiresql, false)) {
         if ($statuscode == BLOG_EXPIRE_ARCHIVE) {
+                    //"Topic: {$_BLOG_CONF['archivetid']}, Title: $title, " .
             COM_errorLog("Archive Story: $sid, " . 
-                    "Topic: {$_BLOG_CONF['archivetid']}, Title: $title, " .
+                    "Topic: {$archivetid}, Title: $title, " .
                     "Expired: $expire");
             DB_query("UPDATE {$_TABLES['blogs']} SET 
                             tid = '{$_BLOG_CONF['archivetid']}', 
@@ -1690,8 +1697,8 @@ function BLOG_showIntros($featured = BLOG_NONFEATURED, $limit = 0)
     }
 
     // Retrieve the archive topic - currently only one supported
-    $archivetid = DB_getItem($_TABLES['topics'], 'tid', "archive_flag=1");
-
+    //$archivetid = DB_getItem($_TABLES['topics'], 'tid', "archive_flag=1");
+    $archivetid = Topic::archiveID();
     $where = ' (date <= NOW()) AND (draft_flag = 0) ';
 
     if (empty($topic)) {

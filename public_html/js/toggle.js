@@ -1,62 +1,36 @@
-/*  $Id: toggleEnabled.js 2 2009-12-30 04:11:52Z root $
- *  Updates database values as checkboxes are checked.
- */
-var xmlHttp;
-function BLOG_toggle(ckbox, sid, component, base_url)
-{
-  xmlHttp=BL_getXmlHttpObject();
-  if (xmlHttp==null) {
-    alert ("Browser does not support HTTP Request")
-    return
-  }
-  // value is reversed since we send the oldvalue to ajax
-  var oldval = ckbox.checked == true ? 0 : 1;
-  var url=base_url + "/ajax.php?action=toggle";
-
-  url=url+"&sid="+sid;
-  url=url+"&component="+component;
-  url=url+"&oldval="+oldval;
-  //url=url+"&sid="+Math.random();
-  xmlHttp.onreadystatechange=BL_stateChanged;
-  xmlHttp.open("GET",url,true);
-  xmlHttp.send(null);
-}
-
-function BL_stateChanged()
-{
-  var newstate;
-
-  if (xmlHttp.readyState==4 || xmlHttp.readyState=="complete")
-  {
-    xmlDoc=xmlHttp.responseXML;
-    sid = xmlDoc.getElementsByTagName("sid")[0].childNodes[0].nodeValue;
-    baseurl = xmlDoc.getElementsByTagName("baseurl")[0].childNodes[0].nodeValue;
-    component = xmlDoc.getElementsByTagName("component")[0].childNodes[0].nodeValue;
-    newval = xmlDoc.getElementsByTagName("newval")[0].childNodes[0].nodeValue;
-    if (newval == 1) {
-        document.getElementById(component+"_"+sid).checked = true;
-        if (component == "featured") {
-            // special case- featuring automatically sets frontpage
-            document.getElementById("frontpage_"+sid).checked = true;
+/**
+*   Toggle enabled fields for blogs.
+*
+*   @param  object  cbox    Checkbox
+*   @param  string  id      Blog SID
+*   @param  string  type    Type of element (draft, featured, etc)
+*/
+var BLOG_toggle = function(cbox, id, type) {
+    oldval = cbox.checked ? 0 : 1;
+     var dataS = {
+        "action" : "toggle",
+        "id": id,
+        "type": type,
+        "oldval": oldval,
+    };
+    data = $("form").serialize() + "&" + $.param(dataS);
+    $.ajax({
+        type: "POST",
+        dataType: "json",
+        url: site_admin_url + "/plugins/blog/ajax.php",
+        data: data,
+        success: function(result) {
+            // Set the ID of the updated checkbox
+            spanid = result.type + '_' + result.id;
+            chk = result.newval == 1 ? true : false;
+            document.getElementById(spanid).checked = chk;
+            try {
+                $.UIkit.notify("<i class='uk-icon-check'></i>&nbsp;" + result.statusMessage, {timeout: 1000,pos:'top-center'});
+            }
+            catch(err) {
+                alert(result.statusMessage);
+            }
         }
-    } else {
-        document.getElementById(component+"_"+sid).checked = false;
-    }
-  }
-
-}
-
-function BL_getXmlHttpObject()
-{
-  var objXMLHttp=null
-  if (window.XMLHttpRequest)
-  {
-    objXMLHttp=new XMLHttpRequest()
-  }
-  else if (window.ActiveXObject)
-  {
-    objXMLHttp=new ActiveXObject("Microsoft.XMLHTTP")
-  }
-  return objXMLHttp
-}
-
+    });
+    return false;
+};

@@ -1,5 +1,4 @@
 <?php
-//  $Id: evEvent.class.php 6372 2011-02-24 20:01:41Z lgarner $
 /**
 *   Administration entry point for the Blog plugin
 *
@@ -162,6 +161,9 @@ function BLOG_adminList()
 
     USES_lib_admin();
 
+    $outputHandle = outputHandler::getInstance();
+    $outputHandle->addScriptFile($_CONF['path_html'].'blog/js/toggle.js');
+
     $retval = '';
 
     $menu_arr = array (
@@ -295,7 +297,8 @@ function BLOG_getListField($fieldname, $fieldvalue, $A, $icon_arr, $token)
         break;
 
     case 'unixdate':
-        $retval = strftime($_CONF['daytime'], $A['unixdate']);
+        $d = new Date($A['unixdate']);
+        $retval = $d->format($_CONF['daytime'], true);
         break;
 
     case 'featured':
@@ -309,10 +312,9 @@ function BLOG_getListField($fieldname, $fieldvalue, $A, $icon_arr, $token)
             $enabled = 0;
         }
         $retval .= "<input type=\"checkbox\" $switch value=\"1\" 
-                name=\"{$fieldname}_check\"
+                name=\"{$fieldname}\"
                 id=\"{$fieldname}_{$A['sid']}\"
-                onclick='BLOG_toggle(this,\"{$A['sid']}\",\"$fieldname\",".
-                "\"".BLOG_ADMIN_URL."\");'".XHTML.'>'.LB;
+                onclick='BLOG_toggle(this,\"{$A['sid']}\",\"$fieldname\");'/>".LB;
         /*if ($fieldvalue == 1) {
             $retval = $icon_arr['check'];
         } */

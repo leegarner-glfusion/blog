@@ -1,5 +1,4 @@
 <?php
-//  $Id: ajax.php 2 2009-12-30 04:11:52Z root $
 /**
 *   Administrative AJAX functions.
 *
@@ -22,34 +21,33 @@ if (!SEC_hasRights('blog.admin')) {
     exit;
 }
 
-switch ($_GET['action']) {
+switch ($_POST['action']) {
 case 'toggle':
-    USES_blog_class_blog();
-    switch ($_GET['component']) {
+    USES_blog_class_blogitem();
+    switch ($_POST['type']) {
     case 'featured':
     case 'draft_flag':
     case 'frontpage':
-        $newval = Blog::toggle($_GET['component'], $_GET['oldval'], $_GET['sid']);
+        $newval = BlogItem::toggle($_POST['type'], $_POST['oldval'], $_POST['id']);
         break;
 
     default:
         exit;
     }
-
-    header('Content-Type: text/xml');
-    header("Cache-Control: no-cache, must-revalidate");
-    //A date in the past
-    header("Expires: Mon, 26 Jul 1997 05:00:00 GMT");
-
-    echo '<?xml version="1.0" encoding="ISO-8859-1"?>'."\n";
-    echo '<info>'. "\n";
-    echo "<newval>$newval</newval>\n";
-    echo "<sid>{$_GET['sid']}</sid>\n";
-    echo "<component>{$_GET['component']}</component>\n";
-    echo "<baseurl>" . BLOG_ADMIN_URL . "</baseurl>\n";
-    echo "</info>\n";
     break;
-
 }
+
+$output = json_encode(array(
+    'id' => $_POST['id'],
+    'type' => $_POST['type'],
+    'newval' => $newval,
+    'statusMessage' => 'Updated',
+) );
+header('Content-Type: text/xml');
+header("Cache-Control: no-cache, must-revalidate");
+//A date in the past
+header("Expires: Mon, 26 Jul 1997 05:00:00 GMT");
+echo $output;
+exit;
 
 ?>

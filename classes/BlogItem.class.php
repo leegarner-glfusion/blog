@@ -2042,17 +2042,9 @@ class BlogItem extends Blog
     *   @param  string  $sid    ID of article record to change
     *   @return integer         New value saved in DB
     */
-    public function toggle($field, $oldval, $sid='')
+    public static function toggle($field, $oldval, $sid)
     {
         global $_TABLES;
-
-        // If a sid is not supplied, use the current object,
-        // if instantiated
-        if (empty($sid) && is_object($this)) {
-            $sid = $this->sid;
-        } else {
-            $sid = COM_sanitizeId($sid);
-        }
 
         // Set up variables and sanitize parameters.
         $newval = $oldval == 0 ? 1 : 0;
@@ -2085,7 +2077,6 @@ class BlogItem extends Blog
                     SET $field = $newval
                     WHERE sid = '$sid'";
             break;
-
         }
 
         // Perform the query.  Any error reverts $newval back to $oldval
