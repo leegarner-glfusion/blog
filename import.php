@@ -32,8 +32,8 @@ $sql = array(
     trackbackcode, statuscode, expire, postmode, advanced_editor_mode,
     frontpage, owner_id, group_id, perm_owner, perm_group, perm_members,
     perm_anon
-FROM {$_TABLES['stories']}
-WHERE draft_flag = 0",
+FROM {$_TABLES['stories']}",
+//WHERE draft_flag = 0",
 
 // Mark all stories as draft to disable them
 "UPDATE {$_TABLES['stories']} SET draft_flag = 1",
